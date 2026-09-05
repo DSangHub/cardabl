@@ -1,0 +1,1 @@
+export async function POST() { return Response.json({ error: "Stripe webhook verification is not configured. Add the Stripe secret and webhook signing secret before enabling payments." }, { status: 503 }); }
