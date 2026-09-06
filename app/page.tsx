@@ -22,7 +22,12 @@ export default function Home() {
   const [claimed, setClaimed] = useState<number | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [notice, setNotice] = useState("");
+  const [selectedCard, setSelectedCard] = useState("Home Depot");
+  const [addingCard, setAddingCard] = useState(false);
+  const [customCard, setCustomCard] = useState("");
   const visible = useMemo(() => jobs.filter((job) => job.distance <= radius), [jobs, radius]);
+  const today = new Date().getDay();
+  const promotionalCashBack = today === 1 || today === 2 ? 5 : today >= 3 && today <= 5 ? 3 : 2;
   useEffect(() => { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined); }, []);
 
   function useLocation() {
@@ -70,8 +75,14 @@ export default function Home() {
         </div>
         <aside className="relative overflow-hidden rounded-[2rem] bg-[#eff7f2] p-5 text-[#07110e] shadow-2xl shadow-black/30 sm:p-7"><div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[#baff29]/35 blur-3xl" />
           <div className="relative flex items-center justify-between"><div><p className="text-sm font-bold text-[#426056]">WORKER TAKE-HOME</p><p className="mt-1 text-5xl font-black tracking-tight">$24<span className="text-xl">/hr</span></p><p className="mt-1 text-sm text-[#587068]">$25 rate − $1 Cardabl fee</p></div><WalletCards className="size-12 text-[#184b39]" /></div>
-          <div className="relative mt-7 rounded-2xl bg-white p-4 shadow-sm"><p className="font-black">Card your pay</p><p className="mt-1 text-sm leading-6 text-[#587068]">Choose an eligible card or bank account on file as your payout destination.</p><div className="mt-4 flex gap-2"><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Debit card</span><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Bank account</span></div></div>
-          <p className="relative mt-4 text-xs leading-5 text-[#62766f]">Payout availability and timing depend on identity verification, the card issuer, and the connected payment provider.</p>
+          <div className="relative mt-7 rounded-2xl bg-white p-4 shadow-sm"><p className="font-black">Choose where you get paid</p><p className="mt-1 text-sm leading-6 text-[#587068]">Send earnings to an eligible debit card or bank account.</p><div className="mt-4 flex gap-2"><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Debit card</span><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Bank account</span></div></div>
+          <div className="relative mt-4 rounded-2xl bg-[#0f2d23] p-4 text-white shadow-sm">
+            <div className="flex items-start justify-between gap-4"><div><p className="font-black">Link your favorite cards</p><p className="mt-1 text-sm leading-5 text-white/65">Get paid on Cardabl and earn promotional cash back at eligible stores.</p></div><div className="shrink-0 rounded-xl bg-[#baff29] px-3 py-2 text-center text-[#07110e]"><span className="block text-[10px] font-bold uppercase">Today</span><strong className="text-xl">Up to {promotionalCashBack}%</strong></div></div>
+            <div className="mt-4 grid grid-cols-2 gap-2">{["Home Depot", "Macy’s", "JCPenney", "Nordstrom Rack"].map((card) => <button key={card} type="button" onClick={() => setSelectedCard(card)} className={`rounded-xl border px-3 py-2 text-left text-sm font-bold transition ${selectedCard === card ? "border-[#baff29] bg-[#baff29] text-[#07110e]" : "border-white/15 bg-white/5 text-white hover:border-white/35"}`}>{card}</button>)}</div>
+            {addingCard ? <form className="mt-2 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (customCard.trim()) { setSelectedCard(customCard.trim()); setAddingCard(false); setCustomCard(""); } }}><Input aria-label="Card name" value={customCard} onChange={(event) => setCustomCard(event.target.value)} placeholder="Enter your favorite card" className="border-white/20 bg-white text-[#07110e]" autoFocus /><Button className="bg-[#baff29] text-[#07110e] hover:bg-[#d0ff68]">Add</Button></form> : <button type="button" onClick={() => setAddingCard(true)} className="mt-2 w-full rounded-xl border border-dashed border-white/30 px-3 py-2 text-sm font-bold text-[#dfff9b] hover:bg-white/5">Don’t see your favorite card? Add it</button>}
+            <p className="mt-3 text-xs leading-5 text-white/50">Offers can change by store, day and time. Slow-day promotions may be higher on Mondays and Tuesdays, up to 5%. Terms and card eligibility apply.</p>
+          </div>
+          <p className="relative mt-4 text-xs leading-5 text-[#62766f]">Store cards are linked reward choices, not payout destinations unless their issuer supports payouts. Payout availability and timing depend on verification and the payment provider.</p>
         </aside>
       </section>
 
