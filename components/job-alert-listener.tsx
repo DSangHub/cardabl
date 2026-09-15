@@ -21,7 +21,7 @@ export function JobAlertListener() {
     let profile: AlertProfile | null = null;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const result = await supabase.from("profiles").select("latitude, longitude, radius_miles, categories, browser_alerts").eq("user_id", data.user.id).maybeSingle();
+      const result = await supabase.from("profiles").select("latitude, longitude, radius_miles, categories, browser_alerts").eq("id", data.user.id).maybeSingle();
       profile = result.data;
     });
     const channel = supabase.channel("nearby-job-alerts").on("postgres_changes", { event: "INSERT", schema: "public", table: "jobs" }, ({ new: row }) => {

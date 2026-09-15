@@ -4,7 +4,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const { data, error } = await supabase.from("profiles").select("display_name, phone, role, postal_code, latitude, longitude, radius_miles, categories, browser_alerts, email_alerts, stripe_account_id").eq("user_id", user.id).maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("display_name, phone, role, postal_code, latitude, longitude, radius_miles, categories, browser_alerts, email_alerts, stripe_account_id").eq("id", user.id).maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ profile: data });
 }
@@ -17,7 +17,8 @@ export async function PUT(request: Request) {
   const role = input.role === "business" ? "business" : "worker";
   const radius = input.radius_miles === 5 ? 5 : 10;
   const record = {
-    user_id: user.id,
+    id: user.id,
+    email: user.email,
     display_name: String(input.display_name || "").slice(0, 100),
     phone: String(input.phone || "").slice(0, 30) || null,
     role,
@@ -30,7 +31,7 @@ export async function PUT(request: Request) {
     email_alerts: Boolean(input.email_alerts),
     updated_at: new Date().toISOString(),
   };
-  const { data, error } = await supabase.from("profiles").upsert(record, { onConflict: "user_id" }).select().single();
+  const { data, error } = await supabase.from("profiles").upsert(record, { onConflict: "id" }).select().single();
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ profile: data });
 }
