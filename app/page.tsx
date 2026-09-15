@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { BriefcaseBusiness, Clock3, CreditCard, LocateFixed, MapPin, Navigation, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -54,7 +55,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#07110e] text-[#f6fbf8]">
       <header className="border-b border-white/10 bg-[#07110e]/95 px-4 py-4 backdrop-blur sm:px-7"><div className="mx-auto flex max-w-6xl items-center justify-between">
         <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black text-[#07110e]">C</span><div><div className="text-xl font-black tracking-tight">cardabl</div><div className="text-xs text-white/55">local work, right now</div></div></div>
-        <button className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white/10">Sign in</button>
+        <Link href="/account" className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white/10">Sign in / Create account</Link>
       </div></header>
 
       <section className="mx-auto grid max-w-6xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[1.1fr_.9fr] lg:py-11">
