@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BriefcaseBusiness, Clock3, CreditCard, LocateFixed, MapPin, Navigation, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react";
+import { BriefcaseBusiness, CheckCircle2, Clock3, CreditCard, DollarSign, LocateFixed, MapPin, Navigation, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -90,6 +90,27 @@ export default function Home() {
           </div>
           <p className="relative mt-4 text-xs leading-5 text-[#62766f]">Store cards are linked reward choices, not payout destinations unless their issuer supports payouts. Payout availability and timing depend on verification and the payment provider.</p>
         </aside>
+      </section>
+
+      <section className="border-y border-[#d6e3dc] bg-[#eff7f2] px-4 py-10 text-[#07110e] sm:px-7">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-black uppercase tracking-wide text-[#35705a]">How your pay works</p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Your money is not touched.</h2>
+            <p className="mt-3 text-base leading-7 text-[#587068]">Cardabl never withdraws money from your personal bank account. The business funds the job, and your approved earnings are securely routed to the payout account you choose.</p>
+          </div>
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">1</span><h3 className="mt-4 text-lg font-black">Complete the shift</h3><p className="mt-2 text-sm leading-6 text-[#587068]">Clock in, do the posted work and finish the agreed shift.</p></div>
+            <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">2</span><h3 className="mt-4 text-lg font-black">Business approves it</h3><p className="mt-2 text-sm leading-6 text-[#587068]">The business confirms the completed hours. Your posted take-home rate is $24 per hour.</p></div>
+            <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">3</span><h3 className="mt-4 text-lg font-black">Receive your earnings</h3><p className="mt-2 text-sm leading-6 text-[#587068]">Stripe sends your earnings to your eligible bank account or debit card. Faster payout options may carry a clearly disclosed fee.</p></div>
+          </div>
+          <div className="mt-5 grid gap-3 rounded-2xl bg-[#0f2d23] p-5 text-white sm:grid-cols-3">
+            <span className="flex items-center gap-2 text-sm font-bold"><CheckCircle2 className="size-5 text-[#baff29]" /> No withdrawal from your account</span>
+            <span className="flex items-center gap-2 text-sm font-bold"><DollarSign className="size-5 text-[#baff29]" /> No hidden deduction</span>
+            <span className="flex items-center gap-2 text-sm font-bold"><ShieldCheck className="size-5 text-[#baff29]" /> Bank details handled by Stripe</span>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-[#62766f]">Cardabl deducts only the displayed $1-per-hour worker platform fee from the listed $25 hourly rate. Optional instant-payout fees, if selected, are shown before confirmation. Payout timing and eligibility depend on Stripe and the receiving financial institution.</p>
+        </div>
       </section>
 
       <section id="nearby" className="border-t border-white/10 bg-[#0b1915] px-4 py-8 sm:px-7"><div className="mx-auto max-w-6xl">
