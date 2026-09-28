@@ -41,14 +41,35 @@ export default function Home() {
     );
   }
 
-  function submitJob(event: React.FormEvent<HTMLFormElement>) {
+  async function submitJob(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const title = String(data.get("title") || "Urgent local help");
     const duration = Number(data.get("duration") || 4);
-    setJobs((current) => [{ id: Date.now(), title, business: "Your business", distance: 1.4, starts: "20 min", duration, category: "New" }, ...current]);
+    const jobId = crypto.randomUUID();
+    setNotice("Opening secure payment…");
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jobId, title, durationHours: duration }),
+    });
+    const result = await response.json();
+    if (result.url) {
+      window.location.href = result.url;
+      return;
+    }
+    setNotice(result.error || "Secure payment could not be opened. Please try again.");
     setShowPost(false);
-    setNotice("Your urgent job is ready for nearby workers. Connect payment to publish it live.");
+  }
+
+  function choosePaymentMethod(method: string) {
+    if (method === "Apple Pay" || method === "Google Pay") {
+      setNotice(`${method} appears in secure checkout when the business, device and Stripe account are eligible.`);
+      setShowPost(true);
+      return;
+    }
+    setNotice(`${method} needs an authorized partner connection and is not available yet.`);
+    document.getElementById("nearby")?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
@@ -76,10 +97,10 @@ export default function Home() {
         </div>
         <aside className="relative overflow-hidden rounded-[2rem] bg-[#eff7f2] p-5 text-[#07110e] shadow-2xl shadow-black/30 sm:p-7"><div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[#baff29]/35 blur-3xl" />
           <div className="relative flex items-center justify-between"><div><p className="text-sm font-bold text-[#426056]">WORKER TAKE-HOME</p><p className="mt-1 text-5xl font-black tracking-tight">$24<span className="text-xl">/hr</span></p><p className="mt-1 text-sm text-[#587068]">$25 rate − $1 Cardabl fee</p></div><WalletCards className="size-12 text-[#184b39]" /></div>
-          <div className="relative mt-7 rounded-2xl bg-white p-4 shadow-sm"><p className="font-black">Choose where you get paid</p><p className="mt-1 text-sm leading-6 text-[#587068]">Send earnings to an eligible debit card or bank account.</p><div className="mt-4 flex gap-2"><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Debit card</span><span className="rounded-lg border border-[#d9e5df] px-3 py-2 text-xs font-bold">Bank account</span></div></div>
+          <div className="relative mt-7 rounded-2xl bg-white p-4 shadow-sm"><p className="font-black">Choose where you get paid</p><p className="mt-1 text-sm leading-6 text-[#587068]">Send earnings to an eligible debit card or bank account.</p><div className="mt-4 flex flex-wrap gap-2"><Link href="/profile#payout" className="rounded-lg border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2 text-xs font-bold transition hover:border-[#184b39] hover:bg-[#e8f4ee]">Connect debit card</Link><Link href="/profile#payout" className="rounded-lg border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2 text-xs font-bold transition hover:border-[#184b39] hover:bg-[#e8f4ee]">Connect bank account</Link></div></div>
           <div className="relative mt-4 rounded-2xl border border-[#d6e3dc] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3"><div><p className="font-black">Payment options</p><p className="mt-1 text-sm leading-5 text-[#587068]">Available methods appear securely at checkout.</p></div><span className="rounded-full bg-[#e8f4ee] px-3 py-1 text-xs font-bold text-[#184b39]">Powered by Stripe</span></div>
-            <div className="mt-4 grid grid-cols-2 gap-2">{["Apple Pay", "Google Pay"].map((method) => <div key={method} className="rounded-xl border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2"><p className="text-sm font-black">{method}</p><p className="mt-0.5 text-[11px] font-bold text-[#35705a]">Stripe eligible</p></div>)}{["Venmo", "Zelle", "Walmart Pay", "Samsung Pay"].map((method) => <div key={method} className="rounded-xl border border-[#e2e6e3] bg-[#f7f8f7] px-3 py-2"><p className="text-sm font-black text-[#52645d]">{method}</p><p className="mt-0.5 text-[11px] font-bold text-[#7d8c86]">Partner connection required</p></div>)}</div>
+            <div className="mt-4 grid grid-cols-2 gap-2">{["Apple Pay", "Google Pay"].map((method) => <button key={method} type="button" onClick={() => choosePaymentMethod(method)} className="rounded-xl border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2 text-left transition hover:border-[#184b39] hover:bg-[#e8f4ee]"><span className="block text-sm font-black">{method}</span><span className="mt-0.5 block text-xs font-bold text-[#35705a]">Continue to checkout</span></button>)}{["Venmo", "Zelle", "Walmart Pay", "Samsung Pay"].map((method) => <button key={method} type="button" onClick={() => choosePaymentMethod(method)} className="rounded-xl border border-[#e2e6e3] bg-[#f7f8f7] px-3 py-2 text-left transition hover:border-[#b9d2c6] hover:bg-[#eef5f1]"><span className="block text-sm font-black text-[#52645d]">{method}</span><span className="mt-0.5 block text-xs font-bold text-[#7d8c86]">Check availability</span></button>)}</div>
             <p className="mt-3 text-xs leading-5 text-[#62766f]">Apple Pay and Google Pay display when the customer, device and Stripe account are eligible. Other services activate only after Cardabl connects their authorized payment partner.</p>
           </div>
           <div className="relative mt-4 rounded-2xl bg-[#0f2d23] p-4 text-white shadow-sm">
