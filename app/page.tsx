@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { formatCents, getStatePayRate, type StatePayRate } from "@/lib/state-pay-rates";
 
 type Job = { id: number; title: string; business: string; distance: number; starts: string; duration: number; category: string };
 const seedJobs: Job[] = [
@@ -18,8 +19,11 @@ const seedJobs: Job[] = [
 
 export default function Home() {
   const [radius, setRadius] = useState(10);
-  const [jobs, setJobs] = useState(seedJobs);
+  const [jobs] = useState(seedJobs);
   const [location, setLocation] = useState("Fresno, CA");
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [payRate, setPayRate] = useState<StatePayRate>(() => getStatePayRate("CA")!);
+  const [postDuration, setPostDuration] = useState(4);
   const [claimed, setClaimed] = useState<number | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [notice, setNotice] = useState("");
@@ -33,9 +37,21 @@ export default function Home() {
 
   function useLocation() {
     if (!navigator.geolocation) return setNotice("Location is not available on this device.");
-    setNotice("Finding nearby work…");
+    setNotice("Finding your state and local pay rate…");
     navigator.geolocation.getCurrentPosition(
-      () => { setLocation("Current location"); setNotice("Showing work near you."); },
+      async ({ coords }) => {
+        try {
+          const response = await fetch(`/api/location/state?latitude=${encodeURIComponent(coords.latitude)}&longitude=${encodeURIComponent(coords.longitude)}`);
+          const result = await response.json() as StatePayRate & { error?: string };
+          if (!response.ok) throw new Error(result.error || "Your state could not be identified.");
+          setCoordinates({ latitude: coords.latitude, longitude: coords.longitude });
+          setPayRate(result);
+          setLocation(`${result.stateName}, ${result.stateCode}`);
+          setNotice(`${result.stateName} is income rank #${result.rank}. Jobs here are listed at ${formatCents(result.listedRateCents)}/hour.`);
+        } catch (error) {
+          setNotice(error instanceof Error ? error.message : "Your state could not be identified.");
+        }
+      },
       () => setNotice("Location access was not allowed. You can still choose a 5 or 10 mile area."),
       { enableHighAccuracy: true, timeout: 8000 },
     );
@@ -46,12 +62,18 @@ export default function Home() {
     const data = new FormData(event.currentTarget);
     const title = String(data.get("title") || "Urgent local help");
     const duration = Number(data.get("duration") || 4);
+    if (!coordinates) {
+      setNotice("Use your location first so Cardabl can verify the correct state rate.");
+      setShowPost(false);
+      document.getElementById("nearby")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
     const jobId = crypto.randomUUID();
     setNotice("Opening secure payment…");
     const response = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jobId, title, durationHours: duration }),
+      body: JSON.stringify({ jobId, title, durationHours: duration, ...coordinates }),
     });
     const result = await response.json();
     if (result.url) {
@@ -82,21 +104,21 @@ export default function Home() {
       <section className="mx-auto grid max-w-6xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[1.1fr_.9fr] lg:py-11">
         <div><div className="mb-5 flex items-center gap-2 text-sm font-semibold text-[#baff29]"><Sparkles className="size-4" /> Jobs can start in as little as 20 minutes</div>
           <h1 className="max-w-2xl text-4xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl">Need work—or help—right now?</h1>
-          <p className="mt-5 max-w-xl text-lg leading-7 text-white/65">Cardabl matches local businesses with nearby people for urgent, entry-level shifts listed at <strong className="text-white">$25 an hour</strong>.</p>
+          <p className="mt-5 max-w-xl text-lg leading-7 text-white/65">Cardabl matches local businesses with nearby people for urgent, entry-level shifts. Your state’s current listed rate is <strong className="text-white">{formatCents(payRate.listedRateCents)} an hour</strong>.</p>
           <div className="mt-7 grid grid-cols-2 gap-3">
             <Button size="lg" className="h-14 rounded-2xl bg-[#baff29] text-base font-black text-[#07110e] hover:bg-[#d0ff68]" onClick={() => document.getElementById("nearby")?.scrollIntoView({ behavior: "smooth" })}><Navigation className="size-5" /> Find a job</Button>
             <Dialog open={showPost} onOpenChange={setShowPost}><DialogTrigger asChild><Button size="lg" variant="outline" className="h-14 rounded-2xl border-white/20 bg-white/5 text-base font-black text-white hover:bg-white/10 hover:text-white"><BriefcaseBusiness className="size-5" /> Post urgent help</Button></DialogTrigger>
-              <DialogContent className="border-[#d6e3dc] bg-[#f7faf8] text-[#07110e] sm:max-w-md"><DialogHeader><DialogTitle className="text-2xl font-black">Post urgent help</DialogTitle><DialogDescription>Reach available workers within 5–10 miles. All shifts are set at $25/hour.</DialogDescription></DialogHeader>
+              <DialogContent className="border-[#d6e3dc] bg-[#f7faf8] text-[#07110e] sm:max-w-md"><DialogHeader><DialogTitle className="text-2xl font-black">Post urgent help</DialogTitle><DialogDescription>Reach available workers within 5–10 miles. {payRate.stateName} shifts are listed at {formatCents(payRate.listedRateCents)}/hour.</DialogDescription></DialogHeader>
                 <form className="mt-2 space-y-4" onSubmit={submitJob}><div className="space-y-2"><Label htmlFor="title">What do you need help with?</Label><Input id="title" name="title" required placeholder="Example: Stock shelves" /></div>
-                  <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="starts">Start time</Label><NativeSelect id="starts" name="starts" defaultValue="20"><option value="20">In 20 minutes</option><option value="45">In 45 minutes</option><option value="60">In 1 hour</option></NativeSelect></div><div className="space-y-2"><Label htmlFor="duration">Hours needed</Label><NativeSelect id="duration" name="duration" defaultValue="4"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></NativeSelect></div></div>
-                  <div className="rounded-xl bg-[#e8f4ee] p-3 text-sm leading-6"><div className="flex justify-between"><span>Worker rate</span><strong>$25/hour</strong></div><div className="flex justify-between"><span>Business fee</span><strong>$1/hour</strong></div><div className="mt-2 flex justify-between border-t border-[#cbded4] pt-2"><span>Total for 4 hours</span><strong>$104</strong></div></div><Button className="h-12 w-full bg-[#07110e] font-bold text-white">Continue to payment</Button>
+                  <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="starts">Start time</Label><NativeSelect id="starts" name="starts" defaultValue="20"><option value="20">In 20 minutes</option><option value="45">In 45 minutes</option><option value="60">In 1 hour</option></NativeSelect></div><div className="space-y-2"><Label htmlFor="duration">Hours needed</Label><NativeSelect id="duration" name="duration" value={postDuration} onChange={(event) => setPostDuration(Number(event.target.value))}><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></NativeSelect></div></div>
+                  <div className="rounded-xl bg-[#e8f4ee] p-3 text-sm leading-6"><div className="flex justify-between"><span>Listed worker rate</span><strong>{formatCents(payRate.listedRateCents)}/hour</strong></div><div className="flex justify-between"><span>Business fee</span><strong>$1/hour</strong></div><div className="mt-2 flex justify-between border-t border-[#cbded4] pt-2"><span>Total for {postDuration} hours</span><strong>{formatCents(payRate.businessRateCents * postDuration)}</strong></div></div><Button className="h-12 w-full bg-[#07110e] font-bold text-white">Continue to payment</Button>
                 </form></DialogContent>
             </Dialog>
           </div>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/55"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-[#baff29]" /> Verified profiles</span><span className="flex items-center gap-2"><CreditCard className="size-4 text-[#baff29]" /> Secure card payment</span><span>1099 independent work</span></div>
         </div>
         <aside className="relative overflow-hidden rounded-[2rem] bg-[#eff7f2] p-5 text-[#07110e] shadow-2xl shadow-black/30 sm:p-7"><div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[#baff29]/35 blur-3xl" />
-          <div className="relative flex items-center justify-between"><div><p className="text-sm font-bold text-[#426056]">WORKER TAKE-HOME</p><p className="mt-1 text-5xl font-black tracking-tight">$24<span className="text-xl">/hr</span></p><p className="mt-1 text-sm text-[#587068]">$25 rate − $1 Cardabl fee</p></div><WalletCards className="size-12 text-[#184b39]" /></div>
+          <div className="relative flex items-center justify-between"><div><p className="text-sm font-bold text-[#426056]">WORKER TAKE-HOME</p><p className="mt-1 text-5xl font-black tracking-tight">{formatCents(payRate.workerRateCents)}<span className="text-xl">/hr</span></p><p className="mt-1 text-sm text-[#587068]">{formatCents(payRate.listedRateCents)} rate − $1 Cardabl fee</p><p className="mt-1 text-xs font-bold text-[#35705a]">{payRate.stateName} · income rank #{payRate.rank}</p></div><WalletCards className="size-12 text-[#184b39]" /></div>
           <div className="relative mt-7 rounded-2xl bg-white p-4 shadow-sm"><p className="font-black">Choose where you get paid</p><p className="mt-1 text-sm leading-6 text-[#587068]">Send earnings to an eligible debit card or bank account.</p><div className="mt-4 flex flex-wrap gap-2"><Link href="/profile#payout" className="rounded-lg border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2 text-xs font-bold transition hover:border-[#184b39] hover:bg-[#e8f4ee]">Connect debit card</Link><Link href="/profile#payout" className="rounded-lg border border-[#b9d2c6] bg-[#f4faf7] px-3 py-2 text-xs font-bold transition hover:border-[#184b39] hover:bg-[#e8f4ee]">Connect bank account</Link></div></div>
           <div className="relative mt-4 rounded-2xl border border-[#d6e3dc] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3"><div><p className="font-black">Payment options</p><p className="mt-1 text-sm leading-5 text-[#587068]">Available methods appear securely at checkout.</p></div><span className="rounded-full bg-[#e8f4ee] px-3 py-1 text-xs font-bold text-[#184b39]">Powered by Stripe</span></div>
@@ -122,7 +144,7 @@ export default function Home() {
           </div>
           <div className="mt-7 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">1</span><h3 className="mt-4 text-lg font-black">Complete the shift</h3><p className="mt-2 text-sm leading-6 text-[#587068]">Clock in, do the posted work and finish the agreed shift.</p></div>
-            <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">2</span><h3 className="mt-4 text-lg font-black">Business approves it</h3><p className="mt-2 text-sm leading-6 text-[#587068]">The business confirms the completed hours. Your posted take-home rate is $24 per hour.</p></div>
+            <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">2</span><h3 className="mt-4 text-lg font-black">Business approves it</h3><p className="mt-2 text-sm leading-6 text-[#587068]">The business confirms the completed hours. In {payRate.stateName}, your current take-home rate is {formatCents(payRate.workerRateCents)} per hour.</p></div>
             <div className="rounded-2xl bg-white p-5 shadow-sm"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black">3</span><h3 className="mt-4 text-lg font-black">Receive your earnings</h3><p className="mt-2 text-sm leading-6 text-[#587068]">Stripe sends your earnings to your eligible bank account or debit card. Faster payout options may carry a clearly disclosed fee.</p></div>
           </div>
           <div className="mt-5 grid gap-3 rounded-2xl bg-[#0f2d23] p-5 text-white sm:grid-cols-3">
@@ -130,16 +152,17 @@ export default function Home() {
             <span className="flex items-center gap-2 text-sm font-bold"><DollarSign className="size-5 text-[#baff29]" /> No hidden deduction</span>
             <span className="flex items-center gap-2 text-sm font-bold"><ShieldCheck className="size-5 text-[#baff29]" /> Bank details handled by Stripe</span>
           </div>
-          <p className="mt-4 text-xs leading-5 text-[#62766f]">Cardabl deducts only the displayed $1-per-hour worker platform fee from the listed $25 hourly rate. Optional instant-payout fees, if selected, are shown before confirmation. Payout timing and eligibility depend on Stripe and the receiving financial institution.</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-[#cbded4] bg-white p-4"><strong>Ranks 1–10 · $25/hr</strong><p className="mt-1 text-xs text-[#62766f]">Highest state per-capita income band</p></div><div className="rounded-xl border border-[#cbded4] bg-white p-4"><strong>Ranks 11–25 · $20/hr</strong><p className="mt-1 text-xs text-[#62766f]">Middle state income band</p></div><div className="rounded-xl border border-[#cbded4] bg-white p-4"><strong>Ranks 26–50 · $18/hr</strong><p className="mt-1 text-xs text-[#62766f]">Remaining states</p></div></div>
+          <p className="mt-4 text-xs leading-5 text-[#62766f]">Cardabl uses the 2025 state per-capita personal-income ranking and deducts only the displayed $1-per-hour worker platform fee. Location verification sets the rate. The applicable state or local minimum wage controls if it is higher. Optional instant-payout fees, if selected, are shown before confirmation.</p>
         </div>
       </section>
 
       <section id="nearby" className="border-t border-white/10 bg-[#0b1915] px-4 py-8 sm:px-7"><div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm font-bold text-[#baff29]">AVAILABLE NOW</p><h2 className="mt-1 text-3xl font-black">Urgent jobs nearby</h2></div><div className="flex gap-2"><button onClick={useLocation} className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold"><LocateFixed className="size-4" /> {location}</button><div className="flex rounded-xl bg-white/10 p-1">{[5, 10].map((value) => <button key={value} onClick={() => setRadius(value)} className={`rounded-lg px-3 py-1 text-sm font-bold ${radius === value ? "bg-white text-[#07110e]" : "text-white/60"}`}>{value} mi</button>)}</div></div></div>
         {notice && <div className="mt-4 flex items-center justify-between rounded-xl bg-[#baff29]/10 px-4 py-3 text-sm text-[#dfff9b]"><span>{notice}</span><button aria-label="Dismiss" onClick={() => setNotice("")}><X className="size-4" /></button></div>}
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">{visible.map((job) => <article key={job.id} className="rounded-2xl border border-white/10 bg-white/[.055] p-5 transition hover:-translate-y-1 hover:border-[#baff29]/50"><div className="flex items-center justify-between"><span className="rounded-full bg-[#baff29]/15 px-3 py-1 text-xs font-bold text-[#dfff9b]">{job.category}</span><span className="flex items-center gap-1 text-sm text-white/55"><MapPin className="size-4" /> {job.distance} mi</span></div><h3 className="mt-5 text-xl font-black">{job.title}</h3><p className="mt-1 text-sm text-white/55">{job.business}</p><div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4"><div><p className="text-lg font-black">${job.duration * 25}</p><p className="flex items-center gap-1 text-xs text-white/45"><Clock3 className="size-3" /> {job.duration} hrs · starts {job.starts}</p></div><Button onClick={() => setClaimed(job.id)} disabled={claimed === job.id} className="rounded-xl bg-white font-black text-[#07110e] hover:bg-[#baff29]">{claimed === job.id ? "Claimed" : "Claim shift"}</Button></div></article>)}</div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">{visible.map((job) => <article key={job.id} className="rounded-2xl border border-white/10 bg-white/[.055] p-5 transition hover:-translate-y-1 hover:border-[#baff29]/50"><div className="flex items-center justify-between"><span className="rounded-full bg-[#baff29]/15 px-3 py-1 text-xs font-bold text-[#dfff9b]">{job.category}</span><span className="flex items-center gap-1 text-sm text-white/55"><MapPin className="size-4" /> {job.distance} mi</span></div><h3 className="mt-5 text-xl font-black">{job.title}</h3><p className="mt-1 text-sm text-white/55">{job.business}</p><div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4"><div><p className="text-lg font-black">{formatCents(job.duration * payRate.listedRateCents)}</p><p className="flex items-center gap-1 text-xs text-white/45"><Clock3 className="size-3" /> {job.duration} hrs · {formatCents(payRate.listedRateCents)}/hr · starts {job.starts}</p></div><Button onClick={() => setClaimed(job.id)} disabled={claimed === job.id} className="rounded-xl bg-white font-black text-[#07110e] hover:bg-[#baff29]">{claimed === job.id ? "Claimed" : "Claim shift"}</Button></div></article>)}</div>
       </div></section>
-      <footer className="border-t border-white/10 bg-[#07110e] px-4 py-6 text-center text-sm text-white/45">Business pays $26/hour. Worker receives $24/hour. Cardabl retains $2/hour before Stripe processing fees. Worker classification, screening, insurance, and local labor rules must be verified before launch.</footer>
+      <footer className="border-t border-white/10 bg-[#07110e] px-4 py-6 text-center text-sm text-white/45">In {payRate.stateName}, the business pays {formatCents(payRate.businessRateCents)}/hour and the worker receives {formatCents(payRate.workerRateCents)}/hour. Cardabl retains $2/hour before Stripe processing fees. Worker classification, screening, insurance, and state/local labor rules must be verified before launch.</footer>
     </main>
   );
 }
