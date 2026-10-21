@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 88" role="img" aria-labelledby="title desc">
+  <title id="title">CardAbl</title>
+  <desc id="desc">A worker on a payment card with a small clock</desc>
+  <rect width="300" height="88" rx="20" fill="#07110e"/>
+  <g transform="translate(10 13)">
+    <rect x="0" y="4" width="66" height="48" rx="13" fill="#123b2e" stroke="#baff29" stroke-width="3"/>
+    <path d="M4 17h58" stroke="#baff29" stroke-width="4" opacity=".72"/>
+    <circle cx="26" cy="27" r="7" fill="#f6fbf8"/>
+    <path d="M13 45c1.8-8.1 6.2-12.2 13-12.2S37.2 36.9 39 45" fill="#f6fbf8"/>
+    <path d="M42 27h13M48.5 20.5v13" stroke="#f6fbf8" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="57" cy="51" r="12" fill="#baff29" stroke="#07110e" stroke-width="3"/>
+    <path d="M57 44v7l5 3" fill="none" stroke="#07110e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="91" y="49" fill="#f6fbf8" font-family="Arial, Helvetica, sans-serif" font-size="35" font-weight="800" letter-spacing="-1.5">Card<tspan fill="#baff29">Abl</tspan></text>
+  <text x="93" y="68" fill="#a8bbb3" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="1.6">LOCAL WORK · RIGHT NOW</text>
+</svg>

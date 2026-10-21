@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { BriefcaseBusiness, CheckCircle2, Clock3, CreditCard, DollarSign, LocateFixed, MapPin, Navigation, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -97,8 +98,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#07110e] text-[#f6fbf8]">
       <header className="border-b border-white/10 bg-[#07110e]/95 px-4 py-4 backdrop-blur sm:px-7"><div className="mx-auto flex max-w-6xl items-center justify-between">
-        <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#baff29] font-black text-[#07110e]">C</span><div><div className="text-xl font-black tracking-tight">cardabl</div><div className="text-xs text-white/55">local work, right now</div></div></div>
-        <Link href="/account" className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white/10">Sign in / Create account</Link>
+        <Link href="/" className="block shrink-0" aria-label="CardAbl home"><Image src="/cardabl-logo.svg" alt="CardAbl — local work, right now" width={300} height={88} priority className="h-10 w-auto sm:h-14" /></Link>
+        <div className="flex items-center gap-3"><a href="https://cardabl.app" className="hidden items-center gap-2 rounded-xl border border-white/15 bg-white px-2 py-1.5 text-[#07110e] sm:flex" aria-label="Scan QR code to open cardabl.app"><Image src="/cardabl-qr.svg" alt="QR code for cardabl.app" width={44} height={44} className="size-11" /><span className="pr-1 text-xs font-black leading-4">SCAN<br /><span className="text-[#35705a]">cardabl.app</span></span></a><Link href="/account" className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white/10"><span className="sm:hidden">Account</span><span className="hidden sm:inline">Sign in / Create account</span></Link></div>
       </div></header>
 
       <section className="mx-auto grid max-w-6xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[1.1fr_.9fr] lg:py-11">
