@@ -157,6 +157,21 @@ export default function Home() {
         </aside>
       </section>
 
+      <section className="bg-[#baff29] px-4 py-8 text-[#07110e] sm:px-7">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 rounded-[2rem] bg-[#d9ff82] p-6 shadow-lg shadow-black/10 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-wide text-[#35705a]">{t("Perfect for gig workers", "Perfecto para trabajadores independientes")}</p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{t("Finish your shift. Get paid to your card.", "Termine su turno. Reciba el pago en su tarjeta.")}</h2>
+            <p className="mt-3 text-base leading-7 text-[#294e41]">{t("Complete your shift and get paid directly to the eligible debit card you choose—no need to wait for a paper check.", "Complete su turno y reciba el pago directamente en la tarjeta de débito elegible que elija, sin esperar un cheque de papel.")}</p>
+            <p className="mt-2 text-sm leading-6 text-[#426056]">{t("CardAbl provides a 1099 tax form at the end of the year when required. As an independent worker, you are responsible for reporting and paying your own taxes.", "CardAbl proporciona un formulario fiscal 1099 al final del año cuando sea requerido. Como trabajador independiente, usted es responsable de declarar y pagar sus propios impuestos.")}</p>
+          </div>
+          <Link href="/profile#payout" className="flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-[#07110e] px-6 py-4 font-black text-white transition hover:-translate-y-0.5 hover:bg-[#123c2e]">
+            <CreditCard className="size-5 text-[#baff29]" />
+            {t("Choose your payout card", "Elija su tarjeta de pago")}
+          </Link>
+        </div>
+      </section>
+
       <section className="border-y border-[#d6e3dc] bg-[#eff7f2] px-4 py-10 text-[#07110e] sm:px-7">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
