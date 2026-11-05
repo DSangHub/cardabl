@@ -18,9 +18,13 @@ export default function AccountPage() {
     const values = new FormData(event.currentTarget);
     const email = String(values.get("email"));
     const password = String(values.get("password"));
+    const username = String(values.get("username") ?? "").trim();
+    if (mode === "signup" && !/^[A-Za-z0-9_]{3,24}$/.test(username)) {
+      return setMessage("Use 3–24 letters, numbers, or underscores for your username.");
+    }
     const supabase = createClient();
     const result = mode === "signup"
-      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${location.origin}/profile` } })
+      ? await supabase.auth.signUp({ email, password, options: { data: { username }, emailRedirectTo: `${location.origin}/profile` } })
       : await supabase.auth.signInWithPassword({ email, password });
     if (result.error) return setMessage(result.error.message);
     if (mode === "signup" && !result.data.session) return setMessage("Check your email to confirm your account.");
@@ -34,6 +38,7 @@ export default function AccountPage() {
       <h1 className="mt-2 text-3xl font-black">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
       <p className="mt-2 text-sm leading-6 text-[#587068]">Save your location, choose a 5 or 10 mile radius, and get notified when urgent jobs match.</p>
       <form onSubmit={submit} className="mt-6 space-y-4">
+        {mode === "signup" && <div><Label htmlFor="username">Username</Label><Input className="mt-2" id="username" name="username" autoComplete="username" minLength={3} maxLength={24} pattern="[A-Za-z0-9_]{3,24}" aria-describedby="username-help" required /><p id="username-help" className="mt-1 text-sm text-[#587068]">3–24 letters, numbers, or underscores.</p></div>}
         <div><Label htmlFor="email">Email</Label><Input className="mt-2" id="email" name="email" type="email" required /></div>
         <div><Label htmlFor="password">Password</Label><Input className="mt-2" id="password" name="password" type="password" minLength={8} required /></div>
         <Button className="h-12 w-full bg-[#07110e] text-white">{mode === "signup" ? "Create account" : "Sign in"}</Button>
