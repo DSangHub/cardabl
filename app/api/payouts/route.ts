@@ -22,10 +22,14 @@ export async function POST(request: Request) {
   if (jobError || !job || job.status !== "completed" || !job.claimed_by) return Response.json({ error: "Only a completed, claimed job can be paid." }, { status: 400 });
 
   const admin = createAdminClient();
-  const { data: worker } = await admin.from("profiles").select("payout_method, venmo_recipient, zelle_recipient").eq("id", job.claimed_by).maybeSingle();
-  if (!worker || !["venmo", "zelle"].includes(worker.payout_method)) return Response.json({ error: "This worker must choose Venmo or Zelle first." }, { status: 409 });
+  const { data: worker } = await admin.from("profiles").select("payout_method, venmo_recipient, zelle_recipient, cash_app_cashtag, cash_app_card_last4").eq("id", job.claimed_by).maybeSingle();
+  if (!worker || !["venmo", "zelle", "cash_app"].includes(worker.payout_method)) return Response.json({ error: "This worker must choose Venmo, Zelle, or Cash App first." }, { status: 409 });
   if (worker.payout_method === "venmo" && !worker.venmo_recipient) return Response.json({ error: "The worker's Venmo destination is incomplete." }, { status: 409 });
   if (worker.payout_method === "zelle" && !worker.zelle_recipient) return Response.json({ error: "The worker's Zelle destination is incomplete." }, { status: 409 });
+  if (worker.payout_method === "cash_app" && !worker.cash_app_cashtag) return Response.json({ error: "The worker's Cash App $Cashtag is incomplete." }, { status: 409 });
+
+  const provider = worker.payout_method === "venmo" ? "paypal_venmo" : worker.payout_method === "zelle" ? "zelle_manual" : "cash_app_oct";
+  const status = worker.payout_method === "zelle" ? "manual_confirmation_required" : "ready";
 
   const record = {
     job_id: job.id,
@@ -33,12 +37,11 @@ export async function POST(request: Request) {
     worker_id: job.claimed_by,
     amount_cents: job.duration_hours * (job.worker_payout_cents ?? job.hourly_rate_cents - 100),
     payment_method: worker.payout_method,
-    provider: worker.payout_method === "venmo" ? "paypal_venmo" : "zelle_manual",
-    status: worker.payout_method === "venmo" ? "ready" : "manual_confirmation_required",
+    provider,
+    status,
   };
   const { data, error } = await admin.from("payouts").insert(record).select().single();
   if (error?.code === "23505") return Response.json({ error: "A payout already exists for this job." }, { status: 409 });
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ payout: data }, { status: 201 });
 }
-

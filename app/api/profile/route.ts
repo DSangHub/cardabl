@@ -4,7 +4,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const { data, error } = await supabase.from("profiles").select("display_name, phone, role, postal_code, latitude, longitude, radius_miles, categories, browser_alerts, email_alerts, stripe_account_id, payout_method, venmo_recipient_type, venmo_recipient, zelle_recipient").eq("id", user.id).maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("display_name, phone, role, postal_code, latitude, longitude, radius_miles, categories, browser_alerts, email_alerts, stripe_account_id, payout_method, venmo_recipient_type, venmo_recipient, zelle_recipient, cash_app_cashtag, cash_app_card_last4").eq("id", user.id).maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 400 });
   return Response.json({ profile: data });
 }
@@ -16,16 +16,21 @@ export async function PUT(request: Request) {
   const input = await request.json();
   const role = input.role === "business" ? "business" : "worker";
   const radius = input.radius_miles === 5 ? 5 : 10;
-  const payoutMethod = ["bank", "debit_card", "venmo", "zelle"].includes(input.payout_method) ? input.payout_method : "bank";
+  const payoutMethod = ["bank", "debit_card", "venmo", "zelle", "cash_app"].includes(input.payout_method) ? input.payout_method : "bank";
   const venmoRecipientType = ["EMAIL", "PHONE", "USER_HANDLE"].includes(input.venmo_recipient_type) ? input.venmo_recipient_type : "USER_HANDLE";
   const rawVenmoRecipient = String(input.venmo_recipient || "").trim().slice(0, 127);
   const venmoRecipient = venmoRecipientType === "USER_HANDLE" ? rawVenmoRecipient.replace(/^@/, "") : rawVenmoRecipient || null;
   const zelleRecipient = String(input.zelle_recipient || "").trim().slice(0, 100) || null;
+  const cashAppCashtag = String(input.cash_app_cashtag || "").trim().slice(0, 50) || null;
+  const cashAppCardLast4 = String(input.cash_app_card_last4 || "").replace(/\D/g, "").slice(0, 4) || null;
   if (role === "worker" && payoutMethod === "venmo" && !venmoRecipient) return Response.json({ error: "Add your Venmo handle, phone, or email." }, { status: 400 });
   if (role === "worker" && payoutMethod === "venmo" && venmoRecipientType === "USER_HANDLE" && !/^[-a-zA-Z0-9_]{1,50}$/.test(venmoRecipient || "")) return Response.json({ error: "Enter a valid Venmo username." }, { status: 400 });
   if (role === "worker" && payoutMethod === "venmo" && venmoRecipientType === "EMAIL" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venmoRecipient || "")) return Response.json({ error: "Enter a valid Venmo email." }, { status: 400 });
   if (role === "worker" && payoutMethod === "venmo" && venmoRecipientType === "PHONE" && !/^\+?[1-9]\d{9,14}$/.test((venmoRecipient || "").replace(/[\s().-]/g, ""))) return Response.json({ error: "Enter a valid Venmo phone number." }, { status: 400 });
   if (role === "worker" && payoutMethod === "zelle" && !zelleRecipient) return Response.json({ error: "Add the phone or email registered with Zelle." }, { status: 400 });
+  if (role === "worker" && payoutMethod === "cash_app" && !cashAppCashtag) return Response.json({ error: "Add your Cash App $Cashtag." }, { status: 400 });
+  if (role === "worker" && payoutMethod === "cash_app" && cashAppCashtag && !/^\$?[A-Za-z0-9_]{3,20}$/.test(cashAppCashtag)) return Response.json({ error: "Enter a valid Cash App $Cashtag (3–20 letters, numbers, or underscores)." }, { status: 400 });
+  if (role === "worker" && payoutMethod === "cash_app" && cashAppCardLast4 && cashAppCardLast4.length !== 4) return Response.json({ error: "Card last 4 must be exactly 4 digits." }, { status: 400 });
   const record = {
     id: user.id,
     email: user.email,
@@ -43,6 +48,8 @@ export async function PUT(request: Request) {
     venmo_recipient_type: role === "worker" && payoutMethod === "venmo" ? venmoRecipientType : null,
     venmo_recipient: role === "worker" && payoutMethod === "venmo" ? venmoRecipient : null,
     zelle_recipient: role === "worker" && payoutMethod === "zelle" ? zelleRecipient : null,
+    cash_app_cashtag: role === "worker" && payoutMethod === "cash_app" ? (cashAppCashtag?.startsWith("$") ? cashAppCashtag : `$${cashAppCashtag}`) : null,
+    cash_app_card_last4: role === "worker" && payoutMethod === "cash_app" ? cashAppCardLast4 : null,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase.from("profiles").upsert(record, { onConflict: "id" }).select().single();
