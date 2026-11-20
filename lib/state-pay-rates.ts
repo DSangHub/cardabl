@@ -3,8 +3,8 @@ export type StatePayRate = {
   stateName: string;
   rank: number;
   listedRateCents: 1800 | 2000 | 2500;
-  workerRateCents: 1700 | 1900 | 2400;
-  businessRateCents: 1900 | 2100 | 2600;
+  workerRateCents: 1800 | 2000 | 2500;
+  businessRateCents: 1800 | 2000 | 2500;
   dataYear: 2025;
 };
 
@@ -32,8 +32,8 @@ export const STATE_PAY_RATES: readonly StatePayRate[] = STATES_BY_INCOME_RANK.ma
     stateName,
     rank,
     listedRateCents,
-    workerRateCents: listedRateCents - 100,
-    businessRateCents: listedRateCents + 100,
+    workerRateCents: listedRateCents,
+    businessRateCents: listedRateCents,
     dataYear: 2025,
   } as StatePayRate;
 });
