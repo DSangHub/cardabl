@@ -17,7 +17,6 @@ export async function POST(request: Request) {
     const rate = await getPayRateForCoordinates(latitude, longitude);
     const origin = new URL(request.url).origin;
     const chargeAmount = rate.businessRateCents * durationHours;
-    const workerAmount = rate.workerRateCents * durationHours;
     const params = new URLSearchParams({
       mode: "payment",
       success_url: `${origin}/?payment=success`,
@@ -26,7 +25,6 @@ export async function POST(request: Request) {
       "line_items[0][price_data][product_data][name]": `${title} — ${durationHours} hours in ${rate.stateName}`,
       "line_items[0][price_data][unit_amount]": String(chargeAmount),
       "line_items[0][quantity]": "1",
-      "payment_intent_data[application_fee_amount]": String(chargeAmount - workerAmount),
       "payment_intent_data[transfer_data][destination]": connectedAccount,
       "metadata[job_id]": jobId,
       "metadata[state_code]": rate.stateCode,
